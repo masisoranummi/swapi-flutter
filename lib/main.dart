@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'character_fetcher.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,14 +12,33 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Star Wars Characters',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (context) => MyAppState(),
+      child: MaterialApp(
+        title: 'Star Wars Characters',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue),
+          useMaterial3: true,
+        ),
+        home: const CharacterListScreen(title: 'Star Wars Characters'),
       ),
-      home: const CharacterListScreen(title: 'Star Wars Characters'),
     );
+  }
+}
+
+class MyAppState extends ChangeNotifier {
+  var current = "";
+  var favorites = <String>[];
+
+  void toggleFavorite(String currentName) {
+    if (favorites.contains(currentName)) {
+      favorites.remove(currentName);
+      print("removed favorite");
+    } else {
+      favorites.add(currentName);
+      print("added favorite");
+    }
+    notifyListeners();
   }
 }
 
@@ -43,6 +63,7 @@ class _CharacterListScreenState extends State<CharacterListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -61,8 +82,8 @@ class _CharacterListScreenState extends State<CharacterListScreen> {
                   return ListView.builder(
                     itemCount: characterNames.length,
                     itemBuilder: (context, index) {
-                      return ListTile(
-                        title: Text(characterNames[index]),
+                      return CharacterWidget(
+                        name: characterNames[index],
                       );
                     },
                   );
@@ -70,6 +91,53 @@ class _CharacterListScreenState extends State<CharacterListScreen> {
                   return const Center(child: Text('No characters found'));
                 }
               })),
+    );
+  }
+}
+
+class CharacterWidget extends StatelessWidget {
+  final String name;
+  const CharacterWidget({super.key, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    final theme = Theme.of(context);
+
+    IconData icon;
+    if (appState.favorites.contains(name)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Card(
+          color: theme.colorScheme.onPrimary,
+          margin: const EdgeInsets.all(8.0),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 18.0),
+            ),
+          ),
+        ),
+        ElevatedButton.icon(
+          onPressed: () {
+            appState.toggleFavorite(name);
+          },
+          icon: Icon(icon),
+          label: const Text('Like'),
+        ),
+        const SizedBox(width: 10),
+        ElevatedButton(
+          onPressed: () {},
+          child: const Text('More'),
+        ),
+      ],
     );
   }
 }
